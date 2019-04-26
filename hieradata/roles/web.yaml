@@ -1,0 +1,16 @@
+---
+apache::vhost:
+ ec2-18-222-193-90.us-east-2.compute.amazonaws.com:
+  port: 80
+  docroot: /var/www/test1
+mysql::db:
+ test1:
+  user: test1
+  password: yadayada
+ test2:
+  user: test2
+  password: yadayada
+file:
+ /var/www/test1/index.html:
+  ensure: file
+  source: puppet:///modules/profile/index.html

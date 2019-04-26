@@ -1,0 +1,5 @@
+---
+file:
+ /etc/yum.repos.d/kubernetes.repo:
+  ensure: file
+  source: puppet:///modules/profile/kubernetes.repo

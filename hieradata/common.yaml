@@ -1,0 +1,27 @@
+---
+user:
+ gauraaga:
+  ensure: present
+  comment: 'Gaurav Agarwal'
+  home: '/home/gauraaga'
+  password: '$1$sqMF29gU$4BhEegZGjrvGwbImLu.8k0'
+  shell: '/bin/bash'
+ gauravag:
+  ensure: present
+  comment: 'Gaurav Agarwal'
+  home: '/home/gauravag'
+  password: '$1$sqMF29gU$4BhEegZGjrvGwbImLu.8k0'
+  shell: '/bin/bash'
+file:
+ /home/gauraaga:
+  ensure: directory
+ /home/gauravag:
+  ensure: directory
+motd::welcomeMessage: 'Hello world!! Hiera is working again!!'
+service:
+ postfix:
+  ensure: running
+  enable: true
+package:
+ tree:
+  ensure: installed

@@ -1,0 +1,29 @@
+node default {
+  if $role  == 'agent'{
+          $welcomeMess = 'Hello Gaurav!! Welcome to Puppet Agent!!'
+  }else{
+          $welcomeMess = 'Hello Gaurav!! Welcome to Puppet Master!!'
+  }
+  
+  class { 'motd':
+          welcomeMessage => "${welcomeMess}"
+  }
+  service {'postfix':
+         ensure => 'running',
+         enable => 'true'
+       }
+  package {'tree':
+         ensure => 'installed'
+       }
+  user { 'gauraaga':
+         ensure           => 'present',
+         comment          => 'Gaurav Agarwal',
+         home             => '/home/gauraaga',
+         password         => '$1$sqMF29gU$4BhEegZGjrvGwbImLu.8k0',
+         shell            => '/bin/bash',
+         require          => File['/home/gauraaga']
+       }
+  file {'/home/gauraaga':
+         ensure  => 'directory',
+       }
+}
