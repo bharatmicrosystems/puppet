@@ -20,8 +20,8 @@ class jenkins {
      require => Exec['import_jenkins_key']
    }
    service {'jenkins':
-     ensure => running,
-     enable => true,
+     ensure => stopped,
+     enable => false,
      require => Package['jenkins']
    }
 }

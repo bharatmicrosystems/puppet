@@ -1,6 +1,11 @@
 class role::ci {
-   include profile::jenkinsci
-   include profile::docker
-   include profile::kubernetes
+   class {'profile::jenkinsci':
+   }
+   class {'profile::docker':
+      require => Class['profile::jenkinsci']
+   }
+   class {'profile::kubernetes':
+      require => Class['profile::docker']
+   }
 }
 

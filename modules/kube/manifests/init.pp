@@ -57,4 +57,39 @@ class kube {
     enable => true,
     require => Package['kubectl']
   }
+  exec{ 'setenforce':
+     command => 'setenforce 0',
+     path     => '/usr/bin:/usr/sbin:/bin',
+     provider => shell,
+     require => Package['kubelet']
+  }
+  exec{ 'selinuxdisable':
+     command => "sed -i --follow-symlinks 's/^SELINUX=enforcing/SELINUX=disabled/' /etc/sysconfig/selinux",
+     path     => '/usr/bin:/usr/sbin:/bin',
+     provider => shell,
+     require => Exec['setenforce']
+  }
+  service{ 'firewalld':
+     ensure => stopped,
+     enable => false,
+     require => Exec['selinuxdisable']
+  }
+  exec{ 'swapdisable':
+     command => "sed -i '/swap/d' /etc/fstab & swapoff -a",
+     path     => '/usr/bin:/usr/sbin:/bin',
+     provider => shell,
+     require => Service['firewalld']
+  }
+  file{ '/etc/sysctl.d/kubernetes.conf':
+    ensure => file,
+    source => 'puppet:///modules/profile/kubernetes.conf',
+    require => Exec['swapdisable']
+  }
+  exec{'sysctl':
+     command => "sysctl --system",
+     path     => '/usr/bin:/usr/sbin:/bin',
+     provider => shell,
+     require => File['/etc/sysctl.d/kubernetes.conf']
+  }
+  
 }
