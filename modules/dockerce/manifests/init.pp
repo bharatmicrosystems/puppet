@@ -35,62 +35,61 @@
 #
 # Copyright 2019 Your name here, unless otherwise noted.
 #
-class dockerce {
-  package{ 'yum-utils':
-    ensure => installed
+class kube {
+  file{ '/etc/yum.repos.d/kubernetes.repo':
+    ensure => file,
+    source => 'puppet:///modules/profile/kubernetes.repo'
   }
-  package{ 'device-mapper-persistent-data':
+  package{ 'kubelet':
     ensure => installed,
-    require => Package['yum-utils']
+    require => File['/etc/yum.repos.d/kubernetes.repo']
   }
-  package{ 'lvm2':
+  package{ 'kubeadm':
     ensure => installed,
-    require => Package['device-mapper-persistent-data']
+    require => Package['kubelet']
   }
-  exec{ 'container-selinux':
-    command => 'yum -y install http://vault.centos.org/centos/7.3.1611/extras/x86_64/Packages/container-selinux-2.9-4.el7.noarch.rpm',
-    path => ['/usr/bin', '/usr/sbin'],
-    creates => '/usr/share/selinux/packages/container.pp.bz2',
-    require => Package['lvm2']
-  }
-  exec{ 'yum-config-manager':
-    command => "yum-config-manager  --add-repo https://download.docker.com/linux/centos/docker-ce.repo",
-    path => ['/usr/bin', '/usr/sbin'],
-    require => Exec['container-selinux']
-  }
-  exec { 'import_gpg_key':
-     command => 'rpm --import https://download.docker.com/linux/centos/gpg',
-     path     => '/usr/bin:/usr/sbin:/bin',
-     provider => shell,
-     require => Exec['yum-config-manager']
-  }
-  package{ 'docker-ce':
+  package{ 'kubectl':
     ensure => installed,
-    require => Exec['yum-config-manager']
+    require => Package['kubeadm']
   }
-  package{ 'docker-ce-cli':
-    ensure => installed,
-    require => Package['docker-ce']
-  }
-  package{ 'containerd.io':
-    ensure => installed,
-    require => Package['docker-ce-cli']
-  }
-  service{ 'docker':
+  service{ 'kubelet':
     ensure => running,
     enable => true,
-    require => Package['containerd.io']
+    require => Package['kubectl']
   }
-  exec{ 'docker-compose':
-     command => 'curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose',
+  exec{ 'setenforce':
+     command => 'setenforce 0',
      path     => '/usr/bin:/usr/sbin:/bin',
      provider => shell,
-     creates => '/usr/local/bin/docker-compose',
-     require => Service['docker']
+     require => Package['kubelet']
   }
-  file{ '/usr/local/bin/docker-compose':
-     ensure => present,
-     mode => '755',
-     require => Exec['docker-compose']
+  exec{ 'selinuxdisable':
+     command => "sed -i --follow-symlinks 's/^SELINUX=enforcing/SELINUX=disabled/' /etc/sysconfig/selinux",
+     path     => '/usr/bin:/usr/sbin:/bin',
+     provider => shell,
+     require => Exec['setenforce']
   }
+  service{ 'firewalld':
+     ensure => stopped,
+     enable => false,
+     require => Exec['selinuxdisable']
+  }
+  exec{ 'swapdisable':
+     command => "sed -i '/swap/d' /etc/fstab & swapoff -a",
+     path     => '/usr/bin:/usr/sbin:/bin',
+     provider => shell,
+     require => Service['firewalld']
+  }
+  file{ '/etc/sysctl.d/kubernetes.conf':
+    ensure => file,
+    source => 'puppet:///modules/profile/kubernetes.conf',
+    require => Exec['swapdisable']
+  }
+  exec{'sysctl':
+     command => "sysctl --system",
+     path     => '/usr/bin:/usr/sbin:/bin',
+     provider => shell,
+     require => File['/etc/sysctl.d/kubernetes.conf']
+  }
+
 }
